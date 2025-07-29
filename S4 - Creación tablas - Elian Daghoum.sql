@@ -215,3 +215,30 @@ FROM ( SELECT card_id, declined, ROW_NUMBER() OVER (PARTITION BY card_id ORDER B
 WHERE fila <= 3
 GROUP BY card_id
 ;
+
+-- ------------------------------------------
+-- NIVEL 3
+-- 1
+-- Crea una tabla con la que podamos unir los datos del nuevo archivo products.csv con la base de datos creada, teniendo en cuenta 
+-- que desde transaction tienes product_ids. 
+--  número de veces que se ha vendido cada producto
+-- ------------------------------------------
+
+CREATE TABLE transacciones_productos AS
+SELECT 
+    t.id AS transaccion_id,
+    TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(t.product_ids, ',', n.n + 1), ',', -1)) AS producto_id
+FROM transactions_t4 t
+JOIN (
+    SELECT 0 AS n UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5
+) n ON n.n < LENGTH(t.product_ids) - LENGTH(REPLACE(t.product_ids, ',', '')) + 1
+WHERE 
+    SUBSTRING_INDEX(SUBSTRING_INDEX(t.product_ids, ',', n.n + 1), ',', -1) != '';
+
+ALTER TABLE transacciones_productos
+ADD CONSTRAINT fk_transaccion
+FOREIGN KEY (transaccion_id) REFERENCES transactions_t4(id);
+
+ALTER TABLE transacciones_productos
+ADD CONSTRAINT fk_producto
+FOREIGN KEY (producto_id) REFERENCES products(id);
